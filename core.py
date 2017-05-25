@@ -100,6 +100,28 @@ def get_html_from_filepath(filepath, start=0, end=None):
     return content, info
 
 
+def get_html_from_notebook(notebook, start=0, end=None):
+    """Convert ipython notebook to html
+    Return: html content of the converted notebook
+    """
+    config = Config({'CSSHTMLHeaderTransformer': {'enabled': True,
+                     'highlight_class': '.highlight-ipynb'},
+                     'SubCell': {'enabled':True, 'start':start, 'end':end}})
+    exporter = HTMLExporter(config=config, template_file='basic',
+                            filters={'highlight2html': custom_highlighter},
+                            preprocessors=[SubCell])
+    content, info = exporter.from_notebook_node(notebook)
+
+    if BeautifulSoup:
+        soup = BeautifulSoup(content, 'html.parser')
+        for i in soup.findAll('div', {'class': 'input'}):
+            if i.findChildren()[1].find(text='#ignore') is not None:
+                i.extract()
+        content = soup.decode(formatter=None)
+
+    return content, info
+
+
 def fix_css(content, info, ignore_css=False):
     """
     General fixes for the notebook generated html
